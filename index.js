@@ -16,7 +16,7 @@ const passphrase = core.getInput('passphrase');
 var privateKey = core.getInput('privateKey');
 
 core.setSecret(password);
-if (passphrase != undefined) {
+if (typeof passphrase == 'string' && passphrase.length > 0) {
     core.setSecret(passphrase);
 }
 
@@ -41,19 +41,20 @@ sftp.connect({
     console.log("Connection established.");
     console.log("Current working directory: " + await sftp.cwd())
     await processPath(localPath, remotePath) //TODO: Instead of localPath, remotePath use key/value to uplaod multiple files at once.
+    if(additionalPaths && additionalPaths.length > 0) {
+        const parsedAdditionalPaths = (() => {
+            try {
+                const parsedAdditionalPaths = JSON.parse(additionalPaths)
+                return Object.entries(parsedAdditionalPaths)
+            }
+            catch (e) {
+                throw "Error parsing addtionalPaths. Make sure it is a valid JSON object (key/ value pairs)."
+            }
+        })()
 
-    const parsedAdditionalPaths = (() => {
-        try {
-            const parsedAdditionalPaths = JSON.parse(additionalPaths)
-            return Object.entries(parsedAdditionalPaths)
+        for (const [local, remote] of parsedAdditionalPaths) {
+            await processPath(local, remote)
         }
-        catch (e) {
-            throw "Error parsing addtionalPaths. Make sure it is a valid JSON object (key/ value pairs)."
-        }
-    })()
-
-    for (const [local, remote] of parsedAdditionalPaths) {
-        await processPath(local, remote)
     }
 
 }).then(() => {
